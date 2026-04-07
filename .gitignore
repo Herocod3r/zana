@@ -1,0 +1,34 @@
+# Local gstack browse/agent state
+.gstack/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Wails build output (when scaffolded)
+build/bin/
+frontend/dist/
+frontend/wailsjs/
+
+# Go
+*.test
+*.out
+vendor/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env / secrets
+.env
+.env.local
+*.local
