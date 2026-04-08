@@ -5,6 +5,8 @@ const name = 'Zana'
 
 <template>
   <main>
-    <h1 data-testid="app-title">{{ name }}</h1>
+    <h1 data-testid="app-title">
+      {{ name }}
+    </h1>
   </main>
 </template>
