@@ -59,13 +59,22 @@ Planning complete. Architecture, design system, scope, and execution plan are al
 
 Next step: scaffold the Wails project and run the throughput spike (the riskiest path first).
 
-## Build (when scaffolded)
+## Build
+
+**Prerequisites:** Go 1.22+, Node 20+, GNU Make, and (for `make dev`) the Wails v2 CLI. `make tools` installs the Wails CLI and `golangci-lint` into `$(go env GOPATH)/bin`.
 
 ```bash
-# Prerequisites: Go 1.22+, Node 20+, Wails CLI
-wails dev    # development with hot reload
-wails build  # production binary
+make tools   # one-time: install wails CLI + golangci-lint
+make deps    # install go modules + npm deps
+make dev     # development with hot reload (Wails + Vite)
+make build   # production binary at build/bin/zana
+make test    # go test + vitest run
+make lint    # golangci-lint + eslint
+make ci      # full pipeline: lint + test + build
+make clean   # remove build artifacts and node_modules
 ```
+
+`make` targets use file-based dependency tracking, so re-running `make build` after a successful build is a no-op.
 
 ## Inspiration
 

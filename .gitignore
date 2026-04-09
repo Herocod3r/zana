@@ -13,8 +13,12 @@ Thumbs.db
 
 # Wails build output (when scaffolded)
 build/bin/
-frontend/dist/
+frontend/dist/*
+!frontend/dist/.gitkeep
 frontend/wailsjs/
+
+# Make sentinel files
+.make/
 
 # Go
 *.test
