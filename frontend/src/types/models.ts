@@ -28,7 +28,8 @@ export interface Terminal {
   tabId: ID
   cwd: string
   command: string
-  mockOutput: string[]
+  /** Rendered terminal output buffer (scrollback history). */
+  scrollback: string[]
   lastOutputAt: number // epoch ms
 }
 
