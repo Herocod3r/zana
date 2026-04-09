@@ -1,6 +1,9 @@
 # Local gstack browse/agent state
 .gstack/
 
+# Superpowers brainstorm scratch files
+.superpowers/
+
 # OS
 .DS_Store
 Thumbs.db

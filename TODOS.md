@@ -16,6 +16,12 @@ Items deferred from /office-hours and /plan-ceo-review (2026-04-06). Tackle afte
 **Effort:** S (CC: ~half to 1 day)
 **Depends on:** v1 ships and you have enough projects to need it.
 
+### Multi-window + drag-drop tabs
+**What:** Support opening multiple Zana windows. Each window shares the same project+workspace tree (sidebar) but has its own active workspace and terminal focus. Drag-drop tabs between windows to move a workspace's view to another window.
+**Why:** Multi-monitor developers want to put different agents on different screens. The nested-tree sidebar (option A) was chosen partly because it grows naturally into this model — every window renders the same tree with its own selection pointer.
+**Effort:** M-L (window lifecycle, state sync, tab detach/attach, per-window Wails context).
+**Depends on:** v1 single-window ships, dogfooding proves the need.
+
 ### Per-project `.zana/init.sh` setup script
 **What:** Optional shell script at `.zana/init.sh` in the repo. Runs in new worktrees on creation. Examples: `pnpm install`, `cp .env.example .env`.
 **Why:** Every new worktree means re-running setup. For monorepos this is painful.
