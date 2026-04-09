@@ -18,6 +18,7 @@
     "vue": "^3.5.12"
   },
   "devDependencies": {
+    "@pinia/testing": "0.1.7",
     "@types/node": "^22.9.0",
     "@typescript-eslint/parser": "^8.58.1",
     "@vitejs/plugin-vue": "^5.2.1",
