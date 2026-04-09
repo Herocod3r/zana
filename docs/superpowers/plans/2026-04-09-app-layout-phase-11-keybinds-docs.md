@@ -18,13 +18,26 @@
 import { describe, expect, it, vi } from 'vitest'
 import { registerKeybinds } from './keybinds'
 
+// Force macOS detection so tests are deterministic across CI platforms.
+Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true })
+
+function makeKey(init: KeyboardEventInit): KeyboardEvent {
+  return new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+}
+
 describe('keybinds', () => {
-  it('invokes mapped handler on matching event', () => {
+  it('invokes mapped handler on matching event (mac mod=meta)', () => {
     const fn = vi.fn()
     const off = registerKeybinds({ 'mod+n': fn })
-    const ev = new KeyboardEvent('keydown', { key: 'n', metaKey: true })
-    window.dispatchEvent(ev)
+    document.body.dispatchEvent(makeKey({ key: 'n', metaKey: true }))
     expect(fn).toHaveBeenCalled()
+    off()
+  })
+  it('does NOT match ctrl+n on macOS (ctrl should pass through to terminal)', () => {
+    const fn = vi.fn()
+    const off = registerKeybinds({ 'mod+n': fn })
+    document.body.dispatchEvent(makeKey({ key: 'n', ctrlKey: true }))
+    expect(fn).not.toHaveBeenCalled()
     off()
   })
   it('ignores events when an input is focused', () => {
@@ -33,8 +46,8 @@ describe('keybinds', () => {
     const input = document.createElement('input')
     document.body.appendChild(input)
     input.focus()
-    const ev = new KeyboardEvent('keydown', { key: 'n', metaKey: true })
-    window.dispatchEvent(ev)
+    // Dispatch from the focused element so e.target is the input.
+    input.dispatchEvent(makeKey({ key: 'n', metaKey: true }))
     expect(fn).not.toHaveBeenCalled()
     off()
     document.body.removeChild(input)
@@ -46,14 +59,36 @@ describe('keybinds', () => {
 
 ```ts
 // frontend/src/lib/keybinds.ts
+//
+// `mod` is platform-specific: Cmd on macOS, Ctrl on Linux/Windows. We never
+// alias both together — on macOS Ctrl combos (e.g. Ctrl+C, Ctrl+D) must pass
+// through to the terminal, not be intercepted as app shortcuts.
+
 export type Handler = (e: KeyboardEvent) => void
+
+function isMac(): boolean {
+  return /Mac|iPhone|iPad/.test(navigator.platform)
+}
 
 function normalize(e: KeyboardEvent): string {
   const parts: string[] = []
-  if (e.metaKey || e.ctrlKey) parts.push('mod')
+  const mod = isMac() ? e.metaKey : e.ctrlKey
+  if (mod) parts.push('mod')
   if (e.altKey) parts.push('alt')
   if (e.shiftKey) parts.push('shift')
-  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+  // Map named keys to canonical lowercase tokens.
+  const map: Record<string, string> = {
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+    ArrowUp: 'up',
+    ArrowDown: 'down',
+    Enter: 'enter',
+    Escape: 'escape',
+    Backspace: 'backspace',
+    Tab: 'tab',
+    ' ': 'space',
+  }
+  const key = map[e.key] ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase())
   parts.push(key)
   return parts.join('+')
 }
@@ -102,46 +137,173 @@ Add to `<script setup>`:
 ```ts
 import { onBeforeUnmount, onMounted } from 'vue'
 import { registerKeybinds } from '@/lib/keybinds'
+import { useThemeStore } from '@/stores/theme'
 
-function splitFocused(direction: 'row' | 'column') {
+// --- split tree helpers -------------------------------------------------
+
+function withActiveTab<T>(fn: (workspaceId: string, tabId: string) => T | void) {
   if (!workspaces.activeWorkspaceId) return
   const tabId = tabs.activeTabId(workspaces.activeWorkspaceId)
   if (!tabId) return
-  const leafId = terminals.focusedLeaf(tabId)
-  if (!leafId) return
-  terminals.splitPane(tabId, leafId, direction)
+  return fn(workspaces.activeWorkspaceId, tabId)
+}
+
+function withFocusedLeaf<T>(fn: (workspaceId: string, tabId: string, leafId: string) => T | void) {
+  withActiveTab((workspaceId, tabId) => {
+    const leafId = terminals.focusedLeaf(tabId)
+    if (!leafId) return
+    fn(workspaceId, tabId, leafId)
+  })
+}
+
+function splitFocused(direction: 'row' | 'column') {
+  withFocusedLeaf((_, tabId, leafId) => terminals.splitPane(tabId, leafId, direction))
 }
 
 function closeFocusedPane() {
-  if (!workspaces.activeWorkspaceId) return
-  const tabId = tabs.activeTabId(workspaces.activeWorkspaceId)
-  if (!tabId) return
-  const leafId = terminals.focusedLeaf(tabId)
-  if (!leafId) return
-  terminals.closeLeaf(tabId, leafId)
+  withFocusedLeaf((_, tabId, leafId) => terminals.closeLeaf(tabId, leafId))
 }
 
 function closeCurrentTab() {
-  if (!workspaces.activeWorkspaceId) return
-  const tabId = tabs.activeTabId(workspaces.activeWorkspaceId)
-  if (!tabId) return
-  api.closeTab(workspaces.activeWorkspaceId, tabId)
+  withActiveTab((workspaceId, tabId) => api.closeTab(workspaceId, tabId))
 }
 
 function newCurrentTab() {
   if (workspaces.activeWorkspaceId) tabs.newTab(workspaces.activeWorkspaceId)
 }
 
+// --- State-B recovery spawn (used by ⌘⇧T) ------------------------------
+//
+// When the current tab's split tree is empty (recovery state), spawn a new
+// terminal into the tab. Otherwise fall through to splitting the focused
+// pane to the right (common "new terminal" expectation in split mode).
+function spawnOrSplit() {
+  withActiveTab((workspaceId, tabId) => {
+    const tree = terminals.treeFor(tabId)
+    const emptyLeaf = tree && tree.kind === 'leaf' && !terminals.terminal(tree.terminalId)
+    if (!tree || emptyLeaf) {
+      const id = `t-spawn-${Date.now()}`
+      const ws = workspaces.workspaces.find((w) => w.id === workspaceId)
+      terminals.terminalsById[id] = {
+        id,
+        tabId,
+        cwd: ws?.worktreePath ?? '/',
+        command: 'zsh',
+        mockOutput: ['$ _'],
+        lastOutputAt: Date.now(),
+      }
+      terminals.setTreeFor(tabId, { kind: 'leaf', id: `lf-spawn-${Date.now()}`, terminalId: id })
+      return
+    }
+    const leafId = terminals.focusedLeaf(tabId)
+    if (leafId) terminals.splitPane(tabId, leafId, 'row')
+  })
+}
+
+// --- "Move to new tab" detachment --------------------------------------
+
+function moveFocusedPaneToNewTab() {
+  withFocusedLeaf((workspaceId, tabId, leafId) => {
+    const tree = terminals.treeFor(tabId)
+    if (!tree || tree.kind === 'leaf') return // nothing to detach when there's only one pane
+    // Find the leaf's terminalId
+    let terminalId: string | null = null
+    const stack = [tree]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.kind === 'leaf' && n.id === leafId) {
+        terminalId = n.terminalId
+        break
+      }
+      if (n.kind === 'branch') {
+        stack.push(n.a, n.b)
+      }
+    }
+    if (!terminalId) return
+    const newTab = tabs.newTab(workspaceId)
+    terminals.setTreeFor(newTab.id, {
+      kind: 'leaf',
+      id: `lf-moved-${Date.now()}`,
+      terminalId,
+    })
+    terminals.closeLeaf(tabId, leafId)
+    tabs.setActive(workspaceId, newTab.id)
+  })
+}
+
+// --- Tab and workspace cycling -----------------------------------------
+
+function cycleTab(delta: number) {
+  if (!workspaces.activeWorkspaceId) return
+  const list = tabs.tabsFor(workspaces.activeWorkspaceId)
+  if (list.length === 0) return
+  const currentId = tabs.activeTabId(workspaces.activeWorkspaceId)
+  const idx = Math.max(0, list.findIndex((t) => t.id === currentId))
+  const next = list[(idx + delta + list.length) % list.length]
+  tabs.setActive(workspaces.activeWorkspaceId, next.id)
+}
+
+function cycleWorkspace(delta: number) {
+  const list = workspaces.workspaces
+  if (list.length === 0) return
+  const idx = Math.max(0, list.findIndex((w) => w.id === workspaces.activeWorkspaceId))
+  const next = list[(idx + delta + list.length) % list.length]
+  workspaces.select(next.id)
+}
+
+function cyclePaneFocus(delta: number) {
+  withActiveTab((_, tabId) => {
+    const tree = terminals.treeFor(tabId)
+    if (!tree) return
+    const leaves: string[] = []
+    const stack = [tree]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.kind === 'leaf') leaves.push(n.id)
+      else {
+        // Push right first so left is processed first (in-order left-to-right).
+        stack.push(n.b, n.a)
+      }
+    }
+    if (leaves.length === 0) return
+    const current = terminals.focusedLeaf(tabId)
+    const idx = Math.max(0, leaves.indexOf(current ?? ''))
+    const next = leaves[(idx + delta + leaves.length) % leaves.length]
+    terminals.setFocus(tabId, next)
+  })
+}
+
+// --- Registration --------------------------------------------------------
+
 let unbind: (() => void) | null = null
 onMounted(() => {
   unbind = registerKeybinds({
+    // Creation
     'mod+shift+n': () => { addProjectOpen.value = true },
     'mod+n': () => { newWorkspaceOpen.value = true },
     'mod+t': () => newCurrentTab(),
+    'mod+shift+t': () => spawnOrSplit(), // ⌘⇧T — State-B recovery / new terminal in current tab
+
+    // Closing
     'mod+w': () => closeCurrentTab(),
     'mod+shift+w': () => closeFocusedPane(),
+
+    // Splitting
     'mod+d': () => splitFocused('row'),
     'mod+shift+d': () => splitFocused('column'),
+
+    // Detachment
+    'mod+shift+enter': () => moveFocusedPaneToNewTab(), // ⌘⇧↵
+
+    // Cycling
+    'mod+alt+right': () => cycleTab(1),  // ⌘⌥→
+    'mod+alt+left': () => cycleTab(-1),  // ⌘⌥←
+    'mod+alt+up': () => cycleWorkspace(-1), // ⌘⌥↑
+    'mod+alt+down': () => cycleWorkspace(1), // ⌘⌥↓
+    'mod+]': () => cyclePaneFocus(1),    // ⌘]
+    'mod+[': () => cyclePaneFocus(-1),   // ⌘[
+
+    // Settings / theme
     'mod+,': () => { settingsOpen.value = true },
     'mod+shift+l': () => { useThemeStore().cycle() },
   })
@@ -151,7 +313,7 @@ onBeforeUnmount(() => {
 })
 ```
 
-Add `import { useThemeStore } from '@/stores/theme'` to the imports.
+**Note:** `⌘Q` is not bound here — quit is the OS's responsibility (macOS handles it via the application menu).
 
 - [ ] **Step 3: Commit** — `git commit -m "feat(shell): hoist keybindings into AppShell via central registry"`
 
@@ -297,7 +459,9 @@ Find the front-end `frontend/src/` subtree in the architecture doc and expand it
 
 - [ ] **Step 4: Remove the OSC-7 confusion and the auto-sqrt grid mention elsewhere**
 
-Skim the document for any remaining references to `ceil(sqrt(pane_count))` and replace with a pointer to the new binary-split description. Skim for `workspaces → panes` phrasing and update to `workspaces → tabs → panes`.
+Skim the document for any remaining references to `ceil(sqrt(pane_count))` and replace with a pointer to the new binary-split description.
+
+**Preserve the "optional tabs" framing.** The hierarchy is **Project → Workspace → Split tree (+ optional Tabs)**, NOT `workspaces → tabs → panes`. The default single-tab case has no tab layer at all — the split tree lives directly under the workspace. When you update any wording in the architecture doc, phrase it as "a workspace holds a split tree of terminal panes; when the user explicitly creates additional tabs, each tab owns its own split tree and the 32px tab bar becomes visible." Do NOT insert `tabs` as a mandatory middle layer.
 
 - [ ] **Step 5: Commit** — `git commit -m "docs(architecture): binary-split tree, optional tab layer, updated frontend tree"`
 
