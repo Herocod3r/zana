@@ -1,12 +1,21 @@
 <script setup lang="ts">
-// Scaffold smoke component. Real UI arrives in a later plan.
-const name = 'Zana'
+// Placeholder shell — replaced in Phase 5.
 </script>
 
 <template>
-  <main>
-    <h1 data-testid="app-title">
-      {{ name }}
-    </h1>
-  </main>
+  <div class="placeholder">
+    <p>Zana — booting</p>
+  </div>
 </template>
+
+<style scoped>
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+</style>
