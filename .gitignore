@@ -16,12 +16,11 @@ Thumbs.db
 
 # Wails build output (when scaffolded)
 build/bin/
-frontend/dist/*
-!frontend/dist/.gitkeep
+frontend/dist/
 frontend/wailsjs/
 
-# Make sentinel files
-.make/
+# Built Go binary at worktree root (from `go build ./...`)
+/zana
 
 # Go
 *.test
