@@ -18,7 +18,6 @@ const component = computed(() => {
   const key = `Ph${pascal}` as keyof typeof Phosphor
   const found = Phosphor[key]
   if (!found) {
-    // eslint-disable-next-line no-console
     console.warn(`[Icon] unknown phosphor name: ${props.name}`)
     return Phosphor.PhCircle
   }
