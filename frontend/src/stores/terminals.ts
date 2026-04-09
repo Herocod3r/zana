@@ -97,12 +97,15 @@ export const useTerminalStore = defineStore('terminals', {
         if (leaf.id === leafId) existingTerminalId = leaf.terminalId
       })
       if (existingTerminalId === null) return
-      // Spawn a new mock terminal for the new pane.
+      // Inherit cwd from the source pane's terminal so the split opens in
+      // the same directory the user was in. Falls back to root if the
+      // source terminal is missing (should not happen in practice).
+      const sourceTerm = this.terminalsById[existingTerminalId]
       const newTermId = newTerminalId()
       this.terminalsById[newTermId] = {
         id: newTermId,
         tabId,
-        cwd: '/Users/dev/.worktrees/new', // TODO: plumb real cwd from workspace
+        cwd: sourceTerm?.cwd ?? '/',
         command: 'zsh',
         scrollback: ['$ _'],
         lastOutputAt: Date.now(),

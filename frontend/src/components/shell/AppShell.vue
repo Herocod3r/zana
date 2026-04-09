@@ -45,7 +45,14 @@ function onAddProjectSubmit(path: string) {
   addProjectOpen.value = false
 }
 function onNewWorkspaceSubmit(payload: { projectId: string; name: string; branch: string; baseBranch: string; createNewBranch: boolean }) {
-  const ws = api.createWorkspace(payload.projectId, payload.name, payload.branch)
+  if (!payload.projectId) {
+    toasts.show({ message: 'No project selected. Add or select a project first.', variant: 'error' })
+    return
+  }
+  const ws = api.createWorkspace(payload.projectId, payload.name, payload.branch, {
+    baseBranch: payload.baseBranch,
+    createNewBranch: payload.createNewBranch,
+  })
   workspaces.select(ws.id)
   toasts.show({ message: `Workspace ${ws.name} created`, variant: 'success' })
   newWorkspaceOpen.value = false

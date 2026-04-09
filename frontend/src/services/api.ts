@@ -30,10 +30,36 @@ export const api = {
   listWorkspaces(projectId: string): Workspace[] {
     return useWorkspaceStore().byProject(projectId)
   },
-  createWorkspace(projectId: string, name: string, branch: string): Workspace {
+  createWorkspace(
+    projectId: string,
+    name: string,
+    branch: string,
+    _opts?: { baseBranch?: string; createNewBranch?: boolean },
+  ): Workspace {
+    // `_opts` is captured so the mock surface matches the real Wails API
+    // (baseBranch + createNewBranch → git worktree add options). In mock
+    // mode we don't actually run git, so the options are recorded for
+    // future backend wiring and otherwise ignored.
     const ws = useWorkspaceStore().createWorkspace(projectId, name, branch)
     // Auto-create default tab
-    useTabStore().newTab(ws.id)
+    const tab = useTabStore().newTab(ws.id)
+    // Seed the tab's split tree with an initial terminal so the user
+    // lands directly in a shell instead of the empty-state button.
+    const terminals = useTerminalStore()
+    const termId = `t-new-${Math.random().toString(36).slice(2, 8)}`
+    terminals.terminalsById[termId] = {
+      id: termId,
+      tabId: tab.id,
+      cwd: ws.worktreePath,
+      command: 'zsh',
+      scrollback: ['$ _'],
+      lastOutputAt: Date.now(),
+    }
+    terminals.setTreeFor(tab.id, {
+      kind: 'leaf',
+      id: `lf-new-${Math.random().toString(36).slice(2, 8)}`,
+      terminalId: termId,
+    })
     return ws
   },
   deleteWorkspace(id: string) {
