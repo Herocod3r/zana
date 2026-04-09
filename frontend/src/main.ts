@@ -15,3 +15,10 @@ app.use(pinia)
 useThemeStore(pinia).init()
 
 app.mount('#app')
+
+// HMR: dispose the theme store's media-query listener when Vite hot-reloads.
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    useThemeStore().dispose()
+  })
+}

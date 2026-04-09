@@ -23,6 +23,8 @@ function mockMatchMedia(dark: boolean) {
 
 describe('themeStore', () => {
   beforeEach(() => {
+    // Dispose any listener leaked from a prior test before resetting pinia.
+    try { useThemeStore().dispose() } catch { /* no store yet on first run */ }
     localStorage.clear()
     setActivePinia(createPinia())
     document.documentElement.removeAttribute('data-theme')
@@ -74,5 +76,16 @@ describe('themeStore', () => {
     t.init()
     t.setPreference('dark')
     expect(localStorage.getItem('zana.theme.preference')).toBe('dark')
+  })
+
+  it('setPreference(system) after light re-resolves from OS', () => {
+    mockMatchMedia(true)
+    const t = useThemeStore()
+    t.init()
+    t.setPreference('light')
+    expect(t.resolved).toBe('light')
+    t.setPreference('system')
+    expect(t.resolved).toBe('dark')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 })

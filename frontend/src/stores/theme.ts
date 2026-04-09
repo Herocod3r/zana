@@ -5,11 +5,14 @@ export type ThemeResolved = 'light' | 'dark'
 
 const STORAGE_KEY = 'zana.theme.preference'
 
+// Module-level runtime handles. Not Pinia state because they are not
+// reactive data — they are the subscription mechanics behind the store.
+let mql: MediaQueryList | null = null
+let listener: ((e: MediaQueryListEvent) => void) | null = null
+
 interface State {
   preference: ThemePreference
   resolved: ThemeResolved
-  _mql: MediaQueryList | null
-  _listener: ((e: MediaQueryListEvent) => void) | null
 }
 
 function readStoredPreference(): ThemePreference {
@@ -22,7 +25,7 @@ function readStoredPreference(): ThemePreference {
   return 'system'
 }
 
-function computeResolved(pref: ThemePreference, mql: MediaQueryList | null): ThemeResolved {
+function computeResolved(pref: ThemePreference): ThemeResolved {
   if (pref === 'system') return mql && mql.matches ? 'dark' : 'light'
   return pref
 }
@@ -35,22 +38,23 @@ export const useThemeStore = defineStore('theme', {
   state: (): State => ({
     preference: 'system',
     resolved: 'dark',
-    _mql: null,
-    _listener: null,
   }),
   actions: {
     init() {
+      // Idempotent: if already initialized, do nothing. This prevents HMR
+      // reloads and double-init calls from leaking listeners.
+      if (mql) return
       this.preference = readStoredPreference()
-      this._mql = window.matchMedia('(prefers-color-scheme: dark)')
-      this.resolved = computeResolved(this.preference, this._mql)
+      mql = window.matchMedia('(prefers-color-scheme: dark)')
+      this.resolved = computeResolved(this.preference)
       applyToDocument(this.resolved)
-      this._listener = () => {
+      listener = () => {
         if (this.preference === 'system') {
-          this.resolved = computeResolved('system', this._mql)
+          this.resolved = computeResolved('system')
           applyToDocument(this.resolved)
         }
       }
-      this._mql.addEventListener('change', this._listener)
+      mql.addEventListener('change', listener)
     },
     setPreference(pref: ThemePreference) {
       this.preference = pref
@@ -59,7 +63,7 @@ export const useThemeStore = defineStore('theme', {
       } catch {
         /* noop */
       }
-      this.resolved = computeResolved(this.preference, this._mql)
+      this.resolved = computeResolved(this.preference)
       applyToDocument(this.resolved)
     },
     cycle() {
@@ -68,11 +72,11 @@ export const useThemeStore = defineStore('theme', {
       this.setPreference(next)
     },
     dispose() {
-      if (this._mql && this._listener) {
-        this._mql.removeEventListener('change', this._listener)
+      if (mql && listener) {
+        mql.removeEventListener('change', listener)
       }
-      this._mql = null
-      this._listener = null
+      mql = null
+      listener = null
     },
   },
 })
