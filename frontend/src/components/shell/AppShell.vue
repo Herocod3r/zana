@@ -7,6 +7,7 @@ import ProjectTree from './ProjectTree.vue'
 import SidebarFooter from './SidebarFooter.vue'
 import TabBar from './TabBar.vue'
 import TerminalArea from './TerminalArea.vue'
+import ModalPortal from '@/components/overlays/ModalPortal.vue'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { useTabStore } from '@/stores/tabs'
 
@@ -38,6 +39,7 @@ function onOpenSettings() { /* Phase 9 */ }
       </RightRegion>
     </div>
     <StatusBar />
+    <ModalPortal />
   </div>
 </template>
 
