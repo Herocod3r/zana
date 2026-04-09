@@ -35,4 +35,18 @@ describe('TerminalArea', () => {
     })
     expect(w.text()).toContain('$')
   })
+
+  it('spawns a new terminal when tree is undefined (fresh empty tab)', async () => {
+    const tabs = useTabStore()
+    const terminals = useTerminalStore()
+    useWorkspaceStore().select('ws-tokyo')
+    // Create a brand-new tab — no tree in terminals.treesByTab.
+    const fresh = tabs.newTab('ws-tokyo')
+    expect(terminals.treeFor(fresh.id)).toBeUndefined()
+    const w = mount(TerminalArea)
+    expect(w.text()).toContain('New terminal')
+    await w.find('button.btn').trigger('click')
+    const tree = terminals.treeFor(fresh.id)
+    expect(tree?.kind).toBe('leaf')
+  })
 })

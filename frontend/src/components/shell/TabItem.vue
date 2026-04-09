@@ -40,6 +40,7 @@ function cancel() { editing.value = false }
 <template>
   <div
     :class="['tab', { 'tab--active': active }]"
+    draggable="true"
     @click="emit('select')"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
