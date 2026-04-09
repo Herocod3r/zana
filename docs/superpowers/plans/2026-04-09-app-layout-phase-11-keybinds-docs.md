@@ -189,7 +189,7 @@ function spawnOrSplit() {
         tabId,
         cwd: ws?.worktreePath ?? '/',
         command: 'zsh',
-        mockOutput: ['$ _'],
+        scrollback: ['$ _'],
         lastOutputAt: Date.now(),
       }
       terminals.setTreeFor(tabId, { kind: 'leaf', id: `lf-spawn-${Date.now()}`, terminalId: id })

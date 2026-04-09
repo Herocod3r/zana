@@ -666,7 +666,7 @@ export interface Terminal {
   tabId: ID
   cwd: string
   command: string
-  mockOutput: string[]
+  scrollback: string[]
   lastOutputAt: number // epoch ms
 }
 

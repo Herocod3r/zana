@@ -338,7 +338,7 @@ function spawnInEmpty() {
     tabId: activeTabId.value,
     cwd: active.value?.worktreePath ?? '/',
     command: 'zsh',
-    mockOutput: ['$ _'],
+    scrollback: ['$ _'],
     lastOutputAt: Date.now(),
   }
   terminals.setTreeFor(activeTabId.value, { kind: 'leaf', id: node.id, terminalId: id })

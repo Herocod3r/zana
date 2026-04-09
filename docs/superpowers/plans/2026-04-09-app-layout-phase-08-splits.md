@@ -21,7 +21,7 @@ import TerminalPane from './TerminalPane.vue'
 
 const term = {
   id: 't-1', tabId: 'tab-1', cwd: '/x', command: 'claude',
-  mockOutput: ['$ claude', '› working'], lastOutputAt: Date.now(),
+  scrollback: ['$ claude', '› working'], lastOutputAt: Date.now(),
 }
 
 describe('TerminalPane', () => {
@@ -67,7 +67,7 @@ const emit = defineEmits<{
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <div class="header">{{ terminal.command }} &nbsp; <span class="cwd">{{ terminal.cwd }}</span></div>
-    <pre class="body">{{ terminal.mockOutput.join('\n') }}</pre>
+    <pre class="body">{{ terminal.scrollback.join('\n') }}</pre>
     <div class="split-controls" @click.stop>
       <button class="sc split-right" @click="emit('split-right')" title="Split right">
         <Icon name="columns" :size="12" />

@@ -41,7 +41,7 @@ export const terminals: Terminal[] = [
     tabId: 'tab-osaka-default',
     cwd: '/Users/dev/.worktrees/osaka',
     command: 'claude',
-    mockOutput: [
+    scrollback: [
       '$ claude',
       'Welcome to Claude Code',
       '› Analyzing internal/api/api.go',
@@ -55,7 +55,7 @@ export const terminals: Terminal[] = [
     tabId: 'tab-osaka-default',
     cwd: '/Users/dev/.worktrees/osaka',
     command: 'codex --continue',
-    mockOutput: [
+    scrollback: [
       '$ codex --continue',
       '› Reading project context',
       '› Writing tests for middleware',
@@ -68,7 +68,7 @@ export const terminals: Terminal[] = [
     tabId: 'tab-tokyo-default',
     cwd: '/Users/dev/.worktrees/tokyo',
     command: 'claude',
-    mockOutput: ['$ claude', 'Waiting for input', '$ _'],
+    scrollback: ['$ claude', 'Waiting for input', '$ _'],
     lastOutputAt: ago(120),
   },
   {
@@ -76,7 +76,7 @@ export const terminals: Terminal[] = [
     tabId: 'tab-kyoto-default',
     cwd: '/Users/dev/.worktrees/kyoto',
     command: 'claude',
-    mockOutput: ['$ claude', '› Investigating race', '$ _'],
+    scrollback: ['$ claude', '› Investigating race', '$ _'],
     lastOutputAt: ago(30),
   },
   {
@@ -84,7 +84,7 @@ export const terminals: Terminal[] = [
     tabId: 'tab-kyoto-logs',
     cwd: '/Users/dev/.worktrees/kyoto',
     command: 'tail -f logs/app.log',
-    mockOutput: ['$ tail -f logs/app.log', '[info] startup complete', '[warn] slow query 1200ms'],
+    scrollback: ['$ tail -f logs/app.log', '[info] startup complete', '[warn] slow query 1200ms'],
     lastOutputAt: ago(5),
   },
 ]
@@ -568,7 +568,7 @@ export const useTerminalStore = defineStore('terminals', {
         tabId,
         cwd: '/Users/dev/.worktrees/new',
         command: 'zsh',
-        mockOutput: ['$ _'],
+        scrollback: ['$ _'],
         lastOutputAt: Date.now(),
       }
       const originalLeaf: SplitNode = { kind: 'leaf', id: leafId, terminalId: tree.kind === 'leaf' ? tree.terminalId : '' }
