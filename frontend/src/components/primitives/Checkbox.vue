@@ -4,8 +4,13 @@ interface Props {
   label?: string
   disabled?: boolean
 }
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
+
+function onClick() {
+  if (props.disabled) return
+  emit('update:modelValue', !props.modelValue)
+}
 </script>
 
 <template>
@@ -14,7 +19,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
       type="button"
       :class="['box', { 'box--on': modelValue }]"
       :disabled="disabled"
-      @click="emit('update:modelValue', !modelValue)"
+      @click="onClick"
     >
       <svg v-if="modelValue" width="10" height="10" viewBox="0 0 10 10">
         <path d="M1 5 L4 8 L9 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" />

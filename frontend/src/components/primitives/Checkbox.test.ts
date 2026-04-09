@@ -8,4 +8,10 @@ describe('Checkbox', () => {
     await w.find('button').trigger('click')
     expect(w.emitted('update:modelValue')).toEqual([[true]])
   })
+
+  it('does not emit when disabled', async () => {
+    const w = mount(Checkbox, { props: { modelValue: false, label: 'Opt', disabled: true } })
+    await w.find('button').trigger('click')
+    expect(w.emitted('update:modelValue')).toBeUndefined()
+  })
 })

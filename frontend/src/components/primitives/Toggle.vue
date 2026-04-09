@@ -3,8 +3,13 @@ interface Props {
   modelValue: boolean
   disabled?: boolean
 }
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
+
+function onClick() {
+  if (props.disabled) return
+  emit('update:modelValue', !props.modelValue)
+}
 </script>
 
 <template>
@@ -12,7 +17,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
     type="button"
     :class="['toggle', { 'toggle--on': modelValue }]"
     :disabled="disabled"
-    @click="emit('update:modelValue', !modelValue)"
+    @click="onClick"
   >
     <span class="knob" />
   </button>
