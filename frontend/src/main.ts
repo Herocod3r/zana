@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+import { useThemeStore } from './stores/theme'
 
 import './styles/tokens.css'
 import './styles/fonts.css'
@@ -8,5 +9,9 @@ import './styles/reset.css'
 import './styles/globals.css'
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
+
+useThemeStore(pinia).init()
+
 app.mount('#app')
