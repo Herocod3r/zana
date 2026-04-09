@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Geist Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/GeistSans-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('/fonts/GeistSans-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/GeistSans-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/GeistMono-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('/fonts/GeistMono-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/GeistMono-SemiBold.woff2') format('woff2');
+}
