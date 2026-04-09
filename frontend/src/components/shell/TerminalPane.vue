@@ -1,24 +1,34 @@
 <script setup lang="ts">
+import { inject } from 'vue'
 import Icon from '@/components/primitives/Icon.vue'
 import type { Terminal } from '@/types/models'
+
 interface Props {
   terminal: Terminal
   focused: boolean
+  tabId: string
+  leafId: string
 }
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'focus'): void
   (e: 'split-right'): void
   (e: 'split-down'): void
-  (e: 'contextmenu', ev: MouseEvent): void
 }>()
+
+const showPaneMenu = inject<(ev: MouseEvent, tabId: string, leafId: string) => void>('showPaneMenu')
+
+function onContext(ev: MouseEvent) {
+  ev.preventDefault()
+  showPaneMenu?.(ev, props.tabId, props.leafId)
+}
 </script>
 
 <template>
   <div
     :class="['pane', { 'pane--focused': focused, 'pane--dimmed': !focused }]"
     @click="emit('focus')"
-    @contextmenu.prevent="emit('contextmenu', $event)"
+    @contextmenu="onContext"
   >
     <div class="header">{{ terminal.command }} &nbsp; <span class="cwd">{{ terminal.cwd }}</span></div>
     <pre class="body">{{ terminal.scrollback.join('\n') }}</pre>

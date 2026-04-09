@@ -1,20 +1,29 @@
 <script setup lang="ts">
+import { inject } from 'vue'
 import ActivityDot from '@/components/primitives/ActivityDot.vue'
 import type { ActivityState, Workspace } from '@/types/models'
+
 interface Props {
   workspace: Workspace
   active: boolean
   state: ActivityState
 }
-defineProps<Props>()
-const emit = defineEmits<{ (e: 'select'): void; (e: 'contextmenu', ev: MouseEvent): void }>()
+const props = defineProps<Props>()
+const emit = defineEmits<{ (e: 'select'): void }>()
+
+const showMenu = inject<(ev: MouseEvent, workspaceId: string) => void>('showWorkspaceMenu')
+
+function onContext(ev: MouseEvent) {
+  ev.preventDefault()
+  showMenu?.(ev, props.workspace.id)
+}
 </script>
 
 <template>
   <div
     :class="['row', { 'row--active': active }]"
     @click="emit('select')"
-    @contextmenu.prevent="emit('contextmenu', $event)"
+    @contextmenu="onContext"
   >
     <ActivityDot :state="state" />
     <span class="name">{{ workspace.name }}</span>

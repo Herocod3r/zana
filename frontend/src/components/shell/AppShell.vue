@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 import Sidebar from './Sidebar.vue'
 import RightRegion from './RightRegion.vue'
 import StatusBar from './StatusBar.vue'
@@ -12,14 +12,20 @@ import AddProjectDialog from '@/components/overlays/AddProjectDialog.vue'
 import NewWorkspaceDialog from '@/components/overlays/NewWorkspaceDialog.vue'
 import SettingsModal from '@/components/overlays/SettingsModal.vue'
 import ToastHost from '@/components/overlays/ToastHost.vue'
+import ContextMenu from '@/components/overlays/ContextMenu.vue'
+import { useContextMenu } from '@/lib/useContextMenu'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { useTabStore } from '@/stores/tabs'
+import { useTerminalStore } from '@/stores/terminals'
 import { useToastStore } from '@/stores/toasts'
 import { api } from '@/services/api'
+import type { SplitNode } from '@/types/models'
 
 const workspaces = useWorkspaceStore()
 const tabs = useTabStore()
+const terminals = useTerminalStore()
 const toasts = useToastStore()
+const menu = useContextMenu()
 
 const showTabBar = computed(
   () => workspaces.activeWorkspaceId !== null && tabs.tabsFor(workspaces.activeWorkspaceId).length > 1,
@@ -42,6 +48,72 @@ function onNewWorkspaceSubmit(payload: { projectId: string; name: string; branch
   toasts.show({ message: `Workspace ${ws.name} created`, variant: 'success' })
   newWorkspaceOpen.value = false
 }
+
+function showWorkspaceMenu(ev: MouseEvent, workspaceId: string) {
+  menu.show(
+    ev,
+    [
+      { id: 'rename', label: 'Rename' },
+      { id: 'duplicate', label: 'Duplicate branch' },
+      { id: 'delete', label: 'Delete', destructive: true },
+    ],
+    (id) => {
+      if (id === 'delete') api.deleteWorkspace(workspaceId)
+      else toasts.show({ message: `${id} not implemented`, variant: 'info' })
+    },
+  )
+}
+
+function showTabMenu(ev: MouseEvent, tabId: string, workspaceId: string) {
+  menu.show(
+    ev,
+    [
+      { id: 'rename', label: 'Rename' },
+      { id: 'close', label: 'Close', destructive: true, shortcut: '⌘W' },
+    ],
+    (id) => {
+      if (id === 'close') api.closeTab(workspaceId, tabId)
+      else toasts.show({ message: `${id} not implemented`, variant: 'info' })
+    },
+  )
+}
+
+function showPaneMenu(ev: MouseEvent, tabId: string, leafId: string) {
+  const tree = terminals.treeFor(tabId)
+  const canDetach = !!(tree && tree.kind === 'branch')
+  menu.show(
+    ev,
+    [
+      { id: 'split-right', label: 'Split right', shortcut: '⌘D' },
+      { id: 'split-down', label: 'Split down', shortcut: '⌘⇧D', separatorAfter: true },
+      { id: 'move-new-tab', label: 'Move to new tab', shortcut: '⌘⇧↵', disabled: !canDetach, separatorAfter: true },
+      { id: 'close', label: 'Close pane', shortcut: '⌘⇧W', destructive: true },
+    ],
+    (id) => {
+      if (id === 'split-right') terminals.splitPane(tabId, leafId, 'row')
+      if (id === 'split-down') terminals.splitPane(tabId, leafId, 'column')
+      if (id === 'close') terminals.closeLeaf(tabId, leafId)
+      if (id === 'move-new-tab' && canDetach && tree) {
+        if (!workspaces.activeWorkspaceId) return
+        const newTab = tabs.newTab(workspaces.activeWorkspaceId)
+        function findLeaf(n: SplitNode): { kind: 'leaf'; id: string; terminalId: string } | null {
+          if (n.kind === 'leaf') return n.id === leafId ? n : null
+          return findLeaf(n.a) || findLeaf(n.b)
+        }
+        const leaf = findLeaf(tree)
+        if (leaf) {
+          terminals.setTreeFor(newTab.id, { kind: 'leaf', id: `lf-moved-${Date.now()}`, terminalId: leaf.terminalId })
+          terminals.closeLeaf(tabId, leafId)
+          tabs.setActive(workspaces.activeWorkspaceId, newTab.id)
+        }
+      }
+    },
+  )
+}
+
+provide('showPaneMenu', showPaneMenu)
+provide('showTabMenu', showTabMenu)
+provide('showWorkspaceMenu', showWorkspaceMenu)
 </script>
 
 <template>
@@ -72,6 +144,14 @@ function onNewWorkspaceSubmit(payload: { projectId: string; name: string; branch
       @cancel="newWorkspaceOpen = false"
     />
     <SettingsModal :open="settingsOpen" @close="settingsOpen = false" />
+    <ContextMenu
+      :open="menu.open.value"
+      :x="menu.x.value"
+      :y="menu.y.value"
+      :items="menu.items.value"
+      @select="menu.select"
+      @close="menu.close"
+    />
   </div>
 </template>
 

@@ -57,6 +57,8 @@ function onDragStart(ev: MouseEvent) {
     <TerminalPane
       :terminal="terminals.terminal((node as any).terminalId)!"
       :focused="terminals.focusedLeaf(tabId) === (node as any).id"
+      :tab-id="tabId"
+      :leaf-id="(node as any).id"
       @focus="onFocus((node as any).id)"
       @split-right="splitRight((node as any).id)"
       @split-down="splitDown((node as any).id)"

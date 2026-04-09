@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { inject, nextTick, ref } from 'vue'
 import ActivityDot from '@/components/primitives/ActivityDot.vue'
 import Icon from '@/components/primitives/Icon.vue'
 import type { ActivityState, Tab } from '@/types/models'
@@ -14,8 +14,14 @@ const emit = defineEmits<{
   (e: 'select'): void
   (e: 'close'): void
   (e: 'rename', name: string): void
-  (e: 'contextmenu', ev: MouseEvent): void
 }>()
+
+const showTabMenu = inject<(ev: MouseEvent, tabId: string, workspaceId: string) => void>('showTabMenu')
+
+function onContext(ev: MouseEvent) {
+  ev.preventDefault()
+  showTabMenu?.(ev, props.tab.id, props.tab.workspaceId)
+}
 
 const editing = ref(false)
 const draft = ref('')
@@ -42,7 +48,7 @@ function cancel() { editing.value = false }
     :class="['tab', { 'tab--active': active }]"
     draggable="true"
     @click="emit('select')"
-    @contextmenu.prevent="emit('contextmenu', $event)"
+    @contextmenu="onContext"
   >
     <ActivityDot :state="state" />
     <span v-if="!editing" class="label" @dblclick.stop="startRename">{{ tab.name }}</span>
