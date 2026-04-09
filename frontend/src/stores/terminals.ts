@@ -9,10 +9,14 @@ interface State {
   focusedLeafByTab: Record<string, string>
 }
 
-let idSeq = 1000
-const newLeafId = () => `lf-${++idSeq}`
-const newBranchId = () => `sp-${idSeq}`
-const newTerminalId = () => `t-${idSeq}`
+// Per-namespace counters. Keeping them independent avoids cross-prefix
+// coupling where one call site's ++ affects another's read.
+let leafSeq = 0
+let branchSeq = 0
+let termSeq = 0
+const newLeafId = () => `lf-${++leafSeq + 1000}`
+const newBranchId = () => `sp-${++branchSeq + 1000}`
+const newTerminalId = () => `t-${++termSeq + 1000}`
 
 function walk(node: SplitNode, fn: (leaf: SplitNode & { kind: 'leaf' }) => void) {
   if (node.kind === 'leaf') fn(node)
@@ -86,22 +90,24 @@ export const useTerminalStore = defineStore('terminals', {
     splitPane(tabId: string, leafId: string, direction: SplitDirection) {
       const tree = this.treesByTab[tabId]
       if (!tree) return
+      // Find the existing leaf's terminalId. If it doesn't exist in this
+      // tree, bail — the caller passed a stale reference.
+      let existingTerminalId: string | null = null
+      walk(tree, (leaf) => {
+        if (leaf.id === leafId) existingTerminalId = leaf.terminalId
+      })
+      if (existingTerminalId === null) return
+      // Spawn a new mock terminal for the new pane.
       const newTermId = newTerminalId()
       this.terminalsById[newTermId] = {
         id: newTermId,
         tabId,
-        cwd: '/Users/dev/.worktrees/new',
+        cwd: '/Users/dev/.worktrees/new', // TODO: plumb real cwd from workspace
         command: 'zsh',
         scrollback: ['$ _'],
         lastOutputAt: Date.now(),
       }
-      const originalLeaf: SplitNode = { kind: 'leaf', id: leafId, terminalId: tree.kind === 'leaf' ? tree.terminalId : '' }
-      // Fetch the real terminalId from the existing leaf
-      let existingTerminalId = ''
-      walk(tree, (leaf) => {
-        if (leaf.id === leafId) existingTerminalId = leaf.terminalId
-      })
-      originalLeaf.terminalId = existingTerminalId
+      const originalLeaf: SplitNode = { kind: 'leaf', id: leafId, terminalId: existingTerminalId }
       const newLeaf: SplitNode = { kind: 'leaf', id: newLeafId(), terminalId: newTermId }
       const replacement: SplitNode = {
         kind: 'branch',

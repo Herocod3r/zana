@@ -8,9 +8,10 @@ interface State {
   activeByWorkspace: Record<string, string>
 }
 
-let counter = 100
-const newId = () => `tab-new-${++counter}`
-const newSplitId = () => `lf-new-${counter}`
+let tabSeq = 100
+let splitSeq = 100
+const newId = () => `tab-new-${++tabSeq}`
+const newSplitId = () => `lf-new-${++splitSeq}`
 
 export const useTabStore = defineStore('tabs', {
   state: (): State => ({ tabs: [], activeByWorkspace: {} }),
