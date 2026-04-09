@@ -2,6 +2,15 @@
 import Sidebar from './Sidebar.vue'
 import RightRegion from './RightRegion.vue'
 import StatusBar from './StatusBar.vue'
+import ProjectTree from './ProjectTree.vue'
+import SidebarFooter from './SidebarFooter.vue'
+
+function onAddProject() {
+  /* Phase 9 wires the dialog */
+}
+function onOpenSettings() {
+  /* Phase 9 wires the modal */
+}
 </script>
 
 <template>
@@ -9,16 +18,14 @@ import StatusBar from './StatusBar.vue'
     <div class="main">
       <Sidebar>
         <template #tree>
-          <div class="placeholder-pad">Projects go here</div>
+          <ProjectTree />
         </template>
         <template #footer>
-          <div class="placeholder-pad">Footer</div>
+          <SidebarFooter @add-project="onAddProject" @open-settings="onOpenSettings" />
         </template>
       </Sidebar>
       <RightRegion>
-        <template #tabbar>
-          <!-- empty until Phase 7 -->
-        </template>
+        <template #tabbar />
         <template #area>
           <div class="area-placeholder">Right region</div>
         </template>
@@ -39,12 +46,6 @@ import StatusBar from './StatusBar.vue'
   flex: 1;
   display: flex;
   min-height: 0;
-}
-.placeholder-pad {
-  padding: var(--s-md);
-  color: var(--text-muted);
-  font-family: var(--mono);
-  font-size: 11px;
 }
 .area-placeholder {
   display: flex;
