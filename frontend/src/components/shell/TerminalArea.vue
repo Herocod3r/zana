@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import Button from '@/components/primitives/Button.vue'
+import TerminalSplits from './TerminalSplits.vue'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { useTabStore } from '@/stores/tabs'
 import { useTerminalStore } from '@/stores/terminals'
@@ -47,6 +48,27 @@ function spawnInEmpty() {
   if (node.kind !== 'leaf') return
   terminals.setTreeFor(activeTabId.value, { kind: 'leaf', id: node.id, terminalId: id })
 }
+
+function onKeydown(e: KeyboardEvent) {
+  if (!active.value || !activeTabId.value) return
+  const focused = terminals.focusedLeaf(activeTabId.value)
+  if (!focused) return
+  const mod = e.metaKey || e.ctrlKey
+  if (!mod) return
+  if (e.key === 'd' && !e.shiftKey) {
+    e.preventDefault()
+    terminals.splitPane(activeTabId.value, focused, 'row')
+  } else if (e.key === 'D' && e.shiftKey) {
+    e.preventDefault()
+    terminals.splitPane(activeTabId.value, focused, 'column')
+  } else if (e.key === 'w' && e.shiftKey) {
+    e.preventDefault()
+    terminals.closeLeaf(activeTabId.value, focused)
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -63,9 +85,9 @@ function spawnInEmpty() {
       <p class="hint">⌘⇧T</p>
     </div>
 
-    <!-- State C: split tree has terminals (real rendering comes in Phase 8) -->
-    <div v-else class="splits-placeholder">
-      <slot name="splits" />
+    <!-- State C: split tree has terminals -->
+    <div v-else class="splits-container">
+      <TerminalSplits v-if="activeTabId && tree" :node="tree" :tab-id="activeTabId" />
     </div>
   </div>
 </template>
@@ -96,5 +118,5 @@ function spawnInEmpty() {
   height: 56px;
   font-size: 12px;
 }
-.splits-placeholder { flex: 1; display: flex; }
+.splits-container { flex: 1; display: flex; min-width: 0; min-height: 0; }
 </style>
