@@ -29,6 +29,26 @@ Items deferred from /office-hours and /plan-ceo-review (2026-04-06). Tackle afte
 **Risk:** Convention creep. Discipline required to keep it just one script, not init.toml.
 **Depends on:** v1 ships, you've felt the pain.
 
+### Phosphor icon tree-shaking
+**What:** The `Icon.vue` primitive currently does `import * as Phosphor from '@phosphor-icons/vue'`, pulling the full ~1200-icon set into the bundle. Replace with an explicit map of the icons Zana actually uses (~14 per the design spec).
+**Why:** Bundle size. The wildcard import defeats tree-shaking and ships unused icon components.
+**Effort:** S
+
+### `--danger` token for form errors
+**What:** `TextInput.vue` uses `var(--accent)` (lime) for inline error messages, re-reading as "attention" rather than "error" per the Industrial Minimalism monochrome palette. Either add a dedicated `--danger` token to DESIGN.md or confirm the reuse is intentional.
+**Why:** Semantic clarity — lime for errors conflicts with lime for primary actions.
+**Effort:** S
+
+### Form a11y — aria-invalid on TextInput
+**What:** When `error` is set on `TextInput.vue`, the `<input>` should have `aria-invalid="true"` and `aria-describedby` linking to the error message span.
+**Why:** Screen reader users need programmatic signal for validation state. Part of the post-v1 accessibility pass.
+**Effort:** S
+
+### Checkbox label wrapping
+**What:** `Checkbox.vue` wraps a `<button>` in a `<label>`, which doesn't deliver the semantic click-on-text-to-toggle that native labels give. Either drop the `<label>` wrapper or switch to a hidden native `<input type="checkbox">` + custom styled box.
+**Why:** Native label/input semantics give free click targets, keyboard activation, and assistive-tech affordances that the current button-in-label pattern does not.
+**Effort:** S
+
 ## P2 — Phase 2 (extension system)
 
 ### Extension loader
