@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed } from 'vue'
 import Button from '@/components/primitives/Button.vue'
 import TerminalSplits from './TerminalSplits.vue'
 import { useWorkspaceStore } from '@/stores/workspaces'
@@ -49,26 +49,7 @@ function spawnInEmpty() {
   terminals.setTreeFor(activeTabId.value, { kind: 'leaf', id: node.id, terminalId: id })
 }
 
-function onKeydown(e: KeyboardEvent) {
-  if (!active.value || !activeTabId.value) return
-  const focused = terminals.focusedLeaf(activeTabId.value)
-  if (!focused) return
-  const mod = e.metaKey || e.ctrlKey
-  if (!mod) return
-  if (e.key === 'd' && !e.shiftKey) {
-    e.preventDefault()
-    terminals.splitPane(activeTabId.value, focused, 'row')
-  } else if (e.key === 'D' && e.shiftKey) {
-    e.preventDefault()
-    terminals.splitPane(activeTabId.value, focused, 'column')
-  } else if (e.key === 'w' && e.shiftKey) {
-    e.preventDefault()
-    terminals.closeLeaf(activeTabId.value, focused)
-  }
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+// Keybindings moved to AppShell via lib/keybinds.ts (Phase 11).
 </script>
 
 <template>

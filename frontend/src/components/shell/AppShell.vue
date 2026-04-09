@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import Sidebar from './Sidebar.vue'
 import RightRegion from './RightRegion.vue'
 import StatusBar from './StatusBar.vue'
@@ -14,10 +14,12 @@ import SettingsModal from '@/components/overlays/SettingsModal.vue'
 import ToastHost from '@/components/overlays/ToastHost.vue'
 import ContextMenu from '@/components/overlays/ContextMenu.vue'
 import { useContextMenu } from '@/lib/useContextMenu'
+import { registerKeybinds } from '@/lib/keybinds'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { useTabStore } from '@/stores/tabs'
 import { useTerminalStore } from '@/stores/terminals'
 import { useToastStore } from '@/stores/toasts'
+import { useThemeStore } from '@/stores/theme'
 import { api } from '@/services/api'
 import type { SplitNode } from '@/types/models'
 
@@ -114,6 +116,151 @@ function showPaneMenu(ev: MouseEvent, tabId: string, leafId: string) {
 provide('showPaneMenu', showPaneMenu)
 provide('showTabMenu', showTabMenu)
 provide('showWorkspaceMenu', showWorkspaceMenu)
+
+// --- central keybinds (Phase 11) ----------------------------------------
+
+function withActiveTab(fn: (workspaceId: string, tabId: string) => void) {
+  if (!workspaces.activeWorkspaceId) return
+  const tabId = tabs.activeTabId(workspaces.activeWorkspaceId)
+  if (!tabId) return
+  fn(workspaces.activeWorkspaceId, tabId)
+}
+
+function withFocusedLeaf(fn: (workspaceId: string, tabId: string, leafId: string) => void) {
+  withActiveTab((workspaceId, tabId) => {
+    const leafId = terminals.focusedLeaf(tabId)
+    if (!leafId) return
+    fn(workspaceId, tabId, leafId)
+  })
+}
+
+function splitFocused(direction: 'row' | 'column') {
+  withFocusedLeaf((_, tabId, leafId) => terminals.splitPane(tabId, leafId, direction))
+}
+
+function closeFocusedPane() {
+  withFocusedLeaf((_, tabId, leafId) => terminals.closeLeaf(tabId, leafId))
+}
+
+function closeCurrentTab() {
+  withActiveTab((workspaceId, tabId) => api.closeTab(workspaceId, tabId))
+}
+
+function newCurrentTab() {
+  if (workspaces.activeWorkspaceId) tabs.newTab(workspaces.activeWorkspaceId)
+}
+
+function spawnOrSplit() {
+  withActiveTab((workspaceId, tabId) => {
+    const tree = terminals.treeFor(tabId)
+    const emptyLeaf = tree && tree.kind === 'leaf' && !terminals.terminal(tree.terminalId)
+    if (!tree || emptyLeaf) {
+      const id = `t-spawn-${Date.now()}`
+      const ws = workspaces.workspaces.find((w) => w.id === workspaceId)
+      terminals.terminalsById[id] = {
+        id,
+        tabId,
+        cwd: ws?.worktreePath ?? '/',
+        command: 'zsh',
+        scrollback: ['$ _'],
+        lastOutputAt: Date.now(),
+      }
+      terminals.setTreeFor(tabId, { kind: 'leaf', id: `lf-spawn-${Date.now()}`, terminalId: id })
+      return
+    }
+    const leafId = terminals.focusedLeaf(tabId)
+    if (leafId) terminals.splitPane(tabId, leafId, 'row')
+  })
+}
+
+function moveFocusedPaneToNewTab() {
+  withFocusedLeaf((workspaceId, tabId, leafId) => {
+    const tree = terminals.treeFor(tabId)
+    if (!tree || tree.kind === 'leaf') return
+    let terminalId: string | null = null
+    const stack: SplitNode[] = [tree]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.kind === 'leaf' && n.id === leafId) {
+        terminalId = n.terminalId
+        break
+      }
+      if (n.kind === 'branch') {
+        stack.push(n.a, n.b)
+      }
+    }
+    if (!terminalId) return
+    const newTab = tabs.newTab(workspaceId)
+    terminals.setTreeFor(newTab.id, { kind: 'leaf', id: `lf-moved-${Date.now()}`, terminalId })
+    terminals.closeLeaf(tabId, leafId)
+    tabs.setActive(workspaceId, newTab.id)
+  })
+}
+
+function cycleTab(delta: number) {
+  if (!workspaces.activeWorkspaceId) return
+  const list = tabs.tabsFor(workspaces.activeWorkspaceId)
+  if (list.length === 0) return
+  const currentId = tabs.activeTabId(workspaces.activeWorkspaceId)
+  const idx = Math.max(0, list.findIndex((t) => t.id === currentId))
+  const next = list[(idx + delta + list.length) % list.length]
+  tabs.setActive(workspaces.activeWorkspaceId, next.id)
+}
+
+function cycleWorkspace(delta: number) {
+  const list = workspaces.workspaces
+  if (list.length === 0) return
+  const idx = Math.max(0, list.findIndex((w) => w.id === workspaces.activeWorkspaceId))
+  const next = list[(idx + delta + list.length) % list.length]
+  workspaces.select(next.id)
+}
+
+function cyclePaneFocus(delta: number) {
+  withActiveTab((_, tabId) => {
+    const tree = terminals.treeFor(tabId)
+    if (!tree) return
+    const leaves: string[] = []
+    const stack: SplitNode[] = [tree]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.kind === 'leaf') leaves.push(n.id)
+      else {
+        stack.push(n.b, n.a)
+      }
+    }
+    if (leaves.length === 0) return
+    const current = terminals.focusedLeaf(tabId)
+    const idx = Math.max(0, leaves.indexOf(current ?? ''))
+    const next = leaves[(idx + delta + leaves.length) % leaves.length]
+    terminals.setFocus(tabId, next)
+  })
+}
+
+let unbind: (() => void) | null = null
+onMounted(() => {
+  unbind = registerKeybinds({
+    'mod+shift+n': () => { addProjectOpen.value = true },
+    'mod+n': () => { newWorkspaceOpen.value = true },
+    'mod+t': () => newCurrentTab(),
+    'mod+shift+t': () => spawnOrSplit(),
+    'mod+w': () => closeCurrentTab(),
+    'mod+shift+w': () => closeFocusedPane(),
+    'mod+d': () => splitFocused('row'),
+    'mod+shift+d': () => splitFocused('column'),
+    'mod+shift+enter': () => moveFocusedPaneToNewTab(),
+    'mod+alt+right': () => cycleTab(1),
+    'mod+alt+left': () => cycleTab(-1),
+    'mod+alt+up': () => cycleWorkspace(-1),
+    'mod+alt+down': () => cycleWorkspace(1),
+    'mod+]': () => cyclePaneFocus(1),
+    'mod+[': () => cyclePaneFocus(-1),
+    'mod+,': () => { settingsOpen.value = true },
+    'mod+shift+l': () => { useThemeStore().cycle() },
+  })
+})
+onBeforeUnmount(() => {
+  unbind?.()
+})
 </script>
 
 <template>
