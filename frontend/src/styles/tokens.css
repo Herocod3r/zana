@@ -1,0 +1,64 @@
+:root {
+  /* Dark theme (default for dark systems) */
+  --bg: #0B0B0E;
+  --surface: #141418;
+  --surface-elev: #1C1C22;
+  --border: #26262E;
+  --border-strong: #34343E;
+  --accent: #A3E635;
+  --accent-fg: #0a0a0a;
+  --text: #E8E8EA;
+  --text-2: #9090A0;
+  --text-muted: #5C5C68;
+  --warning: #FBBF24;
+  --error: #F87171;
+
+  /* Type */
+  --mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+  --sans: 'Geist Sans', -apple-system, system-ui, sans-serif;
+  --font-size-ui: 12px;
+  --font-size-terminal: 13px;
+
+  /* Spacing (4px base) */
+  --s-2xs: 2px;
+  --s-xs: 4px;
+  --s-sm: 8px;
+  --s-md: 12px;
+  --s-lg: 16px;
+  --s-xl: 24px;
+  --s-2xl: 32px;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-full: 50%;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --tabbar-h: 32px;
+  --statusbar-h: 22px;
+  --footer-h: 40px;
+  --drag-region-h: 28px;
+
+  /* Motion */
+  --dur-fast: 80ms;
+  --dur-med: 120ms;
+  --dur-slow: 200ms;
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+[data-theme="light"] {
+  --bg: #F8F8FA;
+  --surface: #FFFFFF;
+  --surface-elev: #FFFFFF;
+  --border: #E4E4EA;
+  --border-strong: #D0D0D8;
+  --accent: #65A30D;
+  --accent-fg: #FFFFFF;
+  --text: #0B0B0E;
+  --text-2: #5C5C68;
+  --text-muted: #9090A0;
+  --warning: #D97706;
+  --error: #DC2626;
+}

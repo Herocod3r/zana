@@ -15,7 +15,7 @@
 
 ## Theming
 - **System theme aware.** The app reads `prefers-color-scheme` from the OS. Dark mode by default if the OS is dark, light mode if the OS is light.
-- **Manual override.** A theme setting in preferences allows the user to lock to dark, lock to light, or follow system (default).
+- **Manual override.** A theme setting in preferences allows the user to lock to dark, lock to light, or follow system (default). The theme toggle button in the sidebar footer cycles `System → Light → Dark → System`.
 - **Future:** Custom themes via extensions (post-v1).
 
 ## Color
@@ -108,7 +108,10 @@ Everywhere else: gray on near-black (or dark on light).
 
 - **Approach:** Grid-disciplined for the app. No creative-editorial bending here, this is a tool.
 - **Single window in v1.** No multi-window or multi-monitor support.
-- **Three-region layout:** sidebar (240px) → workspace tab bar (32px) → terminal grid (fills remainder).
+- **Three-region layout:** sidebar (240px) → right region (tab bar + terminal area) → status bar at the bottom.
+- **Sidebar width is resizable**: default 240px, minimum 180px, maximum 400px. Drag the 1px hairline between sidebar and right region to resize; double-click to reset. Width is persisted to `localStorage.zana.sidebar.width`.
+- **Tab bar visibility**: the 32px tab bar is rendered only when the active workspace has more than one tab. A workspace with a single tab shows its terminal area flush against the sidebar drag region (no tab bar). This matches Ghostty's progressive disclosure.
+- **Status bar**: a 22px bottom strip across the full width shows the active workspace name, git branch, tab and terminal counts, and a rolled-up activity dot on the right.
 - **Min window size:** 800x500.
 - **Max content width:** N/A (the app uses 100% of the window).
 - **Border radius scale:**
@@ -117,20 +120,21 @@ Everywhere else: gray on near-black (or dark on light).
   - Activity dots: 50% (circles)
 - **Shadows:** Almost none. Modals get a single soft shadow: `0 8px 24px rgba(0,0,0,0.4)` in dark, `0 8px 24px rgba(0,0,0,0.12)` in light. Nothing else has shadows — depth comes from background tone, not blur.
 
-## Terminal grid layout
+## Terminal split layout
 
-When a workspace has multiple terminal panes, they tile in a CSS Grid where:
-- N = number of panes
-- Columns = `ceil(sqrt(N))`
-- Rows = `ceil(N / columns)`
-- 1 pane = full width
-- 2 panes = side by side
-- 3 panes = 2 + 1
-- 4 panes = 2x2
-- 5 panes = 3 + 2
-- 6 panes = 3x2
+Terminals inside a tab are arranged as a **binary split tree**, not a fixed grid. Splitting is directional:
 
-Resize handles between panes allow proportional adjustment within the grid. The focused pane has a 1px accent border (only border in the entire UI that uses the accent color outside of buttons/dots).
+- `⌘D` splits the focused terminal to the right (creates a horizontal row with a new terminal on the right).
+- `⌘⇧D` splits the focused terminal downward (creates a vertical column with a new terminal below).
+- Each split operation wraps the focused leaf in a branch node containing the original leaf and a new leaf.
+
+Each branch has a resize handle (1px hairline using `--border`) that can be dragged to adjust the ratio between its two children, clamped between 0.1 and 0.9. Cursor changes to `col-resize` or `row-resize` on hover. No snap points.
+
+The focused pane has a 1px `--accent` border inset 1px so it does not shift layout. Unfocused panes drop to 70% foreground opacity so the eye falls on the focused pane.
+
+Each pane has hover-reveal split controls on its right edge (columns / rows icons). Close via `⌘⇧W` or right-click → Close pane.
+
+When all panes in a tab are closed, the tab shows an empty state with a centered "New terminal" ghost button. When the last tab in a workspace is closed, a new empty tab is created automatically (invariant: every workspace has at least one tab).
 
 ## Motion
 
