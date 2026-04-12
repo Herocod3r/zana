@@ -97,7 +97,7 @@ function spawnInEmpty() {
 .new-term {
   width: 140px;
   height: 56px;
-  font-size: 12px;
+  font-size: var(--font-size-ui);
 }
 .splits-container { flex: 1; display: flex; min-width: 0; min-height: 0; }
 </style>

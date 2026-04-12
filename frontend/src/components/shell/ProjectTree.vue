@@ -57,7 +57,7 @@ function rolledUp(workspaceId: string): ActivityState {
   padding: 8px 12px;
   color: var(--text-muted);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--font-size-ui);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -70,5 +70,5 @@ function rolledUp(workspaceId: string): ActivityState {
   gap: 12px;
   padding: 40px 12px;
 }
-.empty-text { color: var(--text-muted); font-family: var(--mono); font-size: 12px; margin: 0; }
+.empty-text { color: var(--text-muted); font-family: var(--mono); font-size: var(--font-size-ui); margin: 0; }
 </style>

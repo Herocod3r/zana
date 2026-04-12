@@ -77,7 +77,7 @@ function cancel() { editing.value = false }
   max-width: 200px;
   color: var(--text-2);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--font-size-ui);
   font-weight: 500;
   border-right: 1px solid rgba(38, 38, 46, 0.6);
   border-bottom: 2px solid transparent;

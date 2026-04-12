@@ -68,7 +68,7 @@ const rolledUp = computed<ActivityState>(() => {
   border-top: 1px solid var(--border);
   background: var(--surface);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--font-size-ui);
   color: var(--text-muted);
   flex-shrink: 0;
 }

@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import { useThemeStore } from './stores/theme'
+import { useSettingsStore } from './stores/settings'
 import { useProjectStore } from './stores/projects'
 import { useWorkspaceStore } from './stores/workspaces'
 import { useTabStore } from './stores/tabs'
@@ -17,6 +18,7 @@ const pinia = createPinia()
 app.use(pinia)
 
 useThemeStore(pinia).init()
+useSettingsStore(pinia).init()
 useProjectStore(pinia).load()
 useWorkspaceStore(pinia).load()
 useTabStore(pinia).load()

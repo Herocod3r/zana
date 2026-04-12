@@ -53,7 +53,7 @@ function onContext(ev: MouseEvent) {
   background: var(--bg);
   border: 1px solid transparent;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--font-size-terminal);
   color: var(--text);
   overflow: hidden;
   transition: filter var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);

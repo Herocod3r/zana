@@ -19,6 +19,16 @@ build/bin/
 frontend/dist/
 frontend/wailsjs/
 
+# TypeScript build info
+*.tsbuildinfo
+
+# Wails-generated intermediates
+frontend/package.json.md5
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/vitest.config.js
+frontend/vitest.config.d.ts
+
 # Built Go binary at worktree root (from `go build ./...`)
 /zana
 

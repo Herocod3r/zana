@@ -39,7 +39,7 @@ function onContext(ev: MouseEvent) {
   height: 24px;
   color: var(--text-2);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--font-size-ui);
   font-weight: 500;
   cursor: default;
   transition: background-color var(--dur-fast) var(--ease-out),

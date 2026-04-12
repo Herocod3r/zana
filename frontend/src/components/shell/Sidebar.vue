@@ -68,6 +68,10 @@ function resetWidth() {
   height: var(--drag-region-h);
   -webkit-app-region: drag;
   flex-shrink: 0;
+  /* -webkit-app-region: drag creates a compositing layer whose default
+     paint is transparent — without an explicit background it visibly
+     banded against --surface in dark mode. Paint it to match. */
+  background: var(--surface);
 }
 .projects-area {
   flex: 1;

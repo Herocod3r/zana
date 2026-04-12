@@ -6,8 +6,10 @@ import Icon from '@/components/primitives/Icon.vue'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { useTabStore } from '@/stores/tabs'
 import { useTerminalStore } from '@/stores/terminals'
+import { useSettingsStore } from '@/stores/settings'
 
 const workspaces = useWorkspaceStore()
+const settings = useSettingsStore()
 const tabs = useTabStore()
 const terminals = useTerminalStore()
 
@@ -83,6 +85,10 @@ onBeforeUnmount(() => {
   ro = null
 })
 watch(list, async () => {
+  await nextTick()
+  measure()
+})
+watch(() => settings.uiFontSize, async () => {
   await nextTick()
   measure()
 })
@@ -167,7 +173,7 @@ function pickFromOverflow(id: string) {
 }
 .popover-item {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--font-size-ui);
   color: var(--text-2);
   background: transparent;
   border: 0;
